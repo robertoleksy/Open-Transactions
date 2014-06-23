@@ -12,15 +12,34 @@ INJECT_OT_COMMON_USING_NAMESPACE_COMMON_2; // <=== namespaces
 
 using namespace nUse;
 vector<string> cCmdParser::EndingCmdNames (const string sofar) {
-	_mark("start EndingCmdNames");
 	vector<string> CmdNames;
 	for(auto var : mI->mTree) {
-		_info("candidate: " << std::string(var.first) );
-		if((nUtils::CheckIfBegins( sofar, var.first))==true) {
-			_info("element that match: " << std::string(var.first) );
-			CmdNames.push_back(var.first);
-		}
-	}
+		bool Begin=nUtils::CheckIfBegins(sofar,std::string(var.first));
+		if(Begin==true) {	// if our word begins some kind of command     
+			std:: string propose=var.first;  
+			size_t pos = sofar.find(" "); 
+			if(pos==std::string::npos ) {	// if we haven't " " in our word
+
+				string str=" ";
+				size_t found=propose.find_first_of(str);	// looking for first " " in command
+				propose.resize(found);
+				bool ifexists=false;
+				for(auto prop: CmdNames) {		// we must chcek that it not exists in vecor of proposals
+					if(prop==propose) {
+						ifexists=true;
+						}
+					}
+				if(ifexists==false) {	// if it not exists we can push back
+					CmdNames.push_back(propose);
+					}
+				}	
+			else if(pos!=std::string::npos) {	// if we have " " in our word
+				size_t pos2 = propose.find(" "); 
+				std::string formated_propose = propose.substr (pos2);
+				CmdNames.push_back(formated_propose);
+			}
+		}	//end if
+	}	//end for
 	for (auto str: CmdNames) {
 	_dbg1(str+" ");
 	}
@@ -191,18 +210,19 @@ void cCmdParser::cmd_test( shared_ptr<cUseOT> use ) {
 }
 
 
-void cCmdParser::cmd_test_EndingCmdNames(shared_ptr<cUseOT> use){
+void cCmdParser::cmd_test_EndingCmdNames(shared_ptr<cUseOT> use) {
 	_mark("TEST ENDING_CMD_NAMES");
+
 
 	shared_ptr<cCmdParser> parser(new cCmdParser);
 	parser->Init();
 	auto alltest = vector<string> {
-	 "ot msg s~" 
-	,"ot m~"
-	,"ot ~"
+	 "msg s~" 
+	,"m~"
+	,"~"
 	};
 	for (const auto cmd_raw : alltest) {
-		
+
 		try {
 			if (!cmd_raw.length()) continue;
 			auto pos = cmd_raw.find_first_of("~");
