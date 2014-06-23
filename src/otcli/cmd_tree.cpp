@@ -277,8 +277,7 @@ void cCmdParser::Init() {
 		
 	AddFormat("test complete", {}, {}, {},
 		LAMBDA { auto &D=*d; auto Utmp = make_shared<cUseOT>( U ); cmd_test_EndingCmdNames(Utmp); return true; } );
-	AddFormat("test2", {}, {}, {}, // temporarly TODO while parse does not recognize "test complete"
-		LAMBDA { auto &D=*d; auto Utmp = make_shared<cUseOT>( U ); cmd_test_EndingCmdNames(Utmp); return true; } );
+	
 
 	//======== ot account ========
 
@@ -330,8 +329,8 @@ void cCmdParser::Init() {
 
 	//======== ot asset ========
 
-	//	AddFormat("asset", {}, {}, {},
-	//		LAMBDA { auto &D=*d; return U.DisplayDefaultSubject(nUtils::eSubjectType::Asset, D.has("--dryrun") ); } );
+	AddFormat("asset", {}, {}, {},
+		LAMBDA { auto &D=*d; return U.DisplayDefaultSubject(nUtils::eSubjectType::Asset, D.has("--dryrun") ); } );
 
 
 	AddFormat("asset ls", {}, {}, {},
@@ -372,8 +371,8 @@ void cCmdParser::Init() {
 
 	//======== ot nym ========
 
-	//	AddFormat("nym", {}, {}, {},
-	//		LAMBDA { auto &D=*d; return U.DisplayDefaultSubject(nUtils::eSubjectType::User, D.has("--dryrun") ); } );
+		AddFormat("nym", {}, {}, {},
+			LAMBDA { auto &D=*d; return U.DisplayDefaultSubject(nUtils::eSubjectType::User, D.has("--dryrun") ); } );
 
 	AddFormat("nym check", {pNym}, {}, {},
 		LAMBDA { auto &D=*d; return U.NymCheck( D.V(1), D.has("--dryrun") ); } );
@@ -405,8 +404,8 @@ void cCmdParser::Init() {
 
 	//======== ot server ========
 
-	//	AddFormat("server", {}, {}, {},
-	//		LAMBDA { auto &D=*d; return U.DisplayDefaultSubject(nUtils::eSubjectType::Server, D.has("--dryrun") ); } );
+		AddFormat("server", {}, {}, {},
+			LAMBDA { auto &D=*d; return U.DisplayDefaultSubject(nUtils::eSubjectType::Server, D.has("--dryrun") ); } );
 
 	AddFormat("server ls", {}, {}, {},
 		LAMBDA { auto &D=*d; return U.ServerDisplayAll(D.has("--dryrun") ); } );
