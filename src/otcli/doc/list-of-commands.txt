@@ -205,10 +205,12 @@ ot msg send-from <nym-my> <nym> --cc <ccnym> --cc <ccnym2> --push # example of f
 
 ot msg mv	# move message to different directory in your mail box
 
-ot msg rm <index>	# remove message with <index> number for current nym
-ot msg rm --all	# remove all messages from mail box for current nym
-*ot msg rm <nymName> <index> # remove <index> message from mail inbox for <nymName>
-ot msg rm-out nymName> <index> # proposition for command removing msg from mail outbox
+*ot msg rm <index>	# remove message with <index> number for current nym
+*ot msg rm-all [nymName]	# remove all messages from mail box for nym
+*ot msg rm-all 	# remove all messages from mail box for default nym
+*ot msg rm <index> [nymName] # remove <index> message from mail inbox for <nymName>
+*ot msg rm-out <index> [nymName] # proposition for command removing msg from mail outbox
+*ot msg rm-out <index>	# remove message with <index> number for current nym
 
 ------------------------------
 
@@ -245,6 +247,10 @@ ot nym-cred show # show all credential to trust?
 *ot payment ls # Show payment inbox for default nym-my for default server
 *ot payment ls [nym-my]	# Show payment inbox for nym-my for default server
 *ot payment ls [nym-my] [server] # Show payment inbox for nym-my for server
+
+%ot paymant-out ls # Show paymant outbox for default nym-my for default server
+%ot payment-out ls [nym-my]	# Show payment outbox for nym-my for default server
+%ot payment-out ls [nym-my] [server] # Show payment outbox for nym-my for server
 
 *ot payment accept # ERROR: Missing required variable
 *ot payment accept <account> # ERROR: Missing required variable

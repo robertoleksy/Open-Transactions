@@ -162,6 +162,8 @@ namespace nUse {
 		EXEC bool MsgSend(const string & nymSender, vector<string> nymRecipient, const string & subject, const string & msg, int prio, const string & filename, bool dryrun);
 		EXEC bool MsgInRemoveByIndex(const string & nymName, const int32_t & nIndex, bool dryrun);
 		EXEC bool MsgOutRemoveByIndex(const string & nymName, const int32_t & nIndex, bool dryrun);
+		EXEC bool MsgRemoveAllByIndex(const string & nymName, bool dryrun);
+		//EXEC bool MsgInRemoveByIndexAll(const string & nymName, const int32_t & nIndex, bool all, bool dryrun);
 
 		//================= nym =================
 
@@ -189,6 +191,7 @@ namespace nUse {
 		//================= payment ==================
 
 		EXEC bool PaymentShow(const string & nym, const string & server, bool dryrun); ///< show payments inbox
+		EXEC bool PaymentShowOut(const string & nym, const string & server, bool dryrun); ///< show payments inbox
 		EXEC bool PaymentAccept(const string & account, const int64_t index, bool dryrun); ///< accept specified payment from payment inbox
 		EXEC bool PaymentDiscard(const string & nym, const string & index, bool all, bool dryrun);
 		EXEC bool PaymentDiscardAll(bool dryrun);

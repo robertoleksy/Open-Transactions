@@ -1366,10 +1366,16 @@ bool cUseOT::MsgOutCheckIndex(const string & nymName, const int32_t & index) {
 bool cUseOT::MsgInRemoveByIndex(const string & nymName, const int32_t & index, bool dryrun) {
 	_fact("msg rm " << nymName << " index=" << index);
 	if (dryrun) return false;
-	if(!Init()) return false;
+	if(!Init()) return false;	
+	
+	if(nymName.empty()) {
+		_mark("Empty nym name");
+		MsgInRemoveByIndex(NymGetName(NymGetDefault()), index, false);
+		return true;
+	}
 	if(OTAPI_Wrap::Nym_RemoveMailByIndex (NymGetId(nymName), index)){
 		_info("Message " << index << " removed successfully from " << nymName << " inbox");
-	return true;
+		return true;
 	}
 	return false;
 }
@@ -1378,6 +1384,12 @@ bool cUseOT::MsgOutRemoveByIndex(const string & nymName, const int32_t & index, 
 	_fact("msg rm-out " << nymName << " index=" << index);
 	if (dryrun) return false;
 	if(!Init()) return false;
+
+		if(nymName.empty()) {
+		_mark("Empty nym name");
+		MsgOutRemoveByIndex(NymGetName(NymGetDefault()), index, false);
+		return true;
+	}
 	if( OTAPI_Wrap::Nym_RemoveOutmailByIndex(NymGetId(nymName), index) ) {
 		_info("Message " << index << " removed successfully from " << nymName << " outbox");
 		return true;
@@ -1385,6 +1397,29 @@ bool cUseOT::MsgOutRemoveByIndex(const string & nymName, const int32_t & index, 
 	return false;
 }
 
+bool cUseOT::MsgRemoveAllByIndex(const string & nymName, bool dryrun) {
+	_fact("msg rm-all " << nymName);
+	auto nymID = NymGetId(nymName);
+
+	_dbg1("mail Count:  " << OTAPI_Wrap::GetNym_MailCount(nymID));
+	_dbg1("out mail Count:  " << OTAPI_Wrap::GetNym_OutmailCount(nymID));
+	
+	for(int i = 0; i < OTAPI_Wrap::GetNym_MailCount(nymID); i++) {
+		MsgInRemoveByIndex(nymName, 0, false);
+	}
+	
+	for(int i = 0; i < OTAPI_Wrap::GetNym_OutmailCount(nymID); i++) {
+		MsgOutRemoveByIndex(nymName, 0, false);
+	}
+	return true;
+}
+
+/*
+bool cUseOT::MsgOutRemoveByIndexAll(const string & nymName, const int32_t & index, bool all, bool dryrun) {
+	_mark("MsgOutRemoveByIndexAll()");
+	return true;
+}
+*/
 bool cUseOT::NymCheck(const string & nymName, bool dryrun) { // wip
 	_fact("nym check " << nymName);
 	if (dryrun) return false;
@@ -1958,8 +1993,77 @@ bool cUseOT::PaymentShow(const string & nym, const string & server, bool dryrun)
 	return true;
 }
 
+bool cUseOT::PaymentShowOut(const string & nym, const string & server, bool dryrun) { // TODO make it work with longer version: asset, server, nym
+	_fact("Show outcoming payments outbox for nym: " << nym << " and server: " << server);
+	if (dryrun) return false;
+	if(!Init()) return false;
+
+	ID nymID = NymGetId(nym);
+	ID serverID = ServerGetId(server);
+
+	_mark("nym: " << nym << " server: " << server << "account" << AccountGetName(AccountGetDefault()));
+	string paymentOutbox = OTAPI_Wrap::LoadOutbox(serverID, nymID, AccountGetName(AccountGetDefault())); // Returns NULL, or an inbox.
+
+	if (paymentOutbox.empty()) {
+		DisplayStringEndl(cout, "Unable to load the payments outbox (probably doesn't exist yet.)\n(Nym/Server: " + nym + " / " + server + " )");
+		return false;
+	}
+
+  int32_t count = OTAPI_Wrap::Ledger_GetCount(serverID, nymID, nymID, paymentOutbox);
+	if (count > 0) {
+		OTAPI_Wrap::Output(0, "Show payments outbox (Nym/Server)\n( " + nym + " / " + server + " )\n");
+		bprinter::TablePrinter tp(&std::cout);
+		tp.AddColumn("ID", 4);
+		tp.AddColumn("Amount", 10);
+		tp.AddColumn("Type", 10);
+		tp.AddColumn("Txn", 10);
+		tp.AddColumn("Asset Type", 60);
+		tp.PrintHeader();
+
+		for (int32_t index = 0; index < count; ++index)
+		{
+			string instrument = OTAPI_Wrap::Ledger_GetInstrument(serverID, nymID, nymID, paymentOutbox, index);
+
+			if (instrument.empty()) {
+				 OTAPI_Wrap::Output(0, "Failed trying to get payment instrument from payments box.\n");
+				 return false;
+			}
+			string transaction = OTAPI_Wrap::Ledger_GetTransactionByIndex(serverID, nymID, nymID, paymentOutbox, index);
+			int64_t transNumber = OTAPI_Wrap::Ledger_GetTransactionIDByIndex(serverID, nymID, nymID, paymentOutbox, index);
+
+			string transactionNumber = to_string(transNumber);
+
+			int64_t refNum = OTAPI_Wrap::Transaction_GetDisplayReferenceToNum(serverID, nymID, nymID, transaction); // FIXME why we need this?
+
+			int64_t amount = OTAPI_Wrap::Instrmnt_GetAmount(instrument);
+			string instrumentType = OTAPI_Wrap::Instrmnt_GetType(instrument);
+			string instrAssetID = OTAPI_Wrap::Instrmnt_GetAssetID(instrument);
+			string senderNymID = OTAPI_Wrap::Instrmnt_GetSenderUserID(instrument);
+			string senderAccountID = OTAPI_Wrap::Instrmnt_GetSenderAcctID(instrument);
+			string recipientNymID = OTAPI_Wrap::Instrmnt_GetRecipientUserID(instrument);
+			string recipientAccountID = OTAPI_Wrap::Instrmnt_GetRecipientAcctID(instrument);
+
+			string finalNymID = senderNymID.empty() ? senderNymID : recipientNymID;
+			string finalAccountID = senderAccountID.empty() ? senderAccountID : recipientAccountID;
+
+			bool hasAmount = amount >= 0;
+			bool hasAsset = !instrAssetID.empty();
+
+			string formattedAmount = (hasAmount && hasAsset) ? OTAPI_Wrap::FormatAmount(instrAssetID, amount) : "UNKNOWN_AMOUNT";
+
+ 			string assetDescr = AssetGetName(instrAssetID) + "(" + instrAssetID + ")";
+			string recipientDescr = recipientNymID; // FIXME Is recipient needed in purse?
+
+			tp << to_string(index) <<  formattedAmount << instrumentType << transactionNumber << assetDescr;
+		} // for
+		tp.PrintFooter();
+	}
+
+
+	return true;
+}
+
 bool cUseOT::PaymentDiscard(const string & nym, const string & index, bool all, bool dryrun) {
-	_mark("Discard incoming payment");
 	
 	if (dryrun) return false;
 	if(!Init()) return false;
@@ -1968,7 +2072,6 @@ bool cUseOT::PaymentDiscard(const string & nym, const string & index, bool all, 
 		auto nymID = NymGetDefault();
 		string paymentInbox = OTAPI_Wrap::LoadPaymentInbox(ServerGetDefault(), nymID); // Returns NULL, or an inbox.
 		int32_t count = OTAPI_Wrap::Ledger_GetCount(ServerGetDefault(), nymID, nymID, paymentInbox);
-		_dbg1("Count: " << count);
 		count --;
 		mMadeEasy.discard_incoming_payments(ServerGetDefault(), nymID, std::to_string(count));		
 		return true;
@@ -1978,7 +2081,6 @@ bool cUseOT::PaymentDiscard(const string & nym, const string & index, bool all, 
 		auto nymID = NymGetId(nym);
 		string paymentInbox = OTAPI_Wrap::LoadPaymentInbox(ServerGetDefault(), nymID); // Returns NULL, or an inbox.
 		int32_t count = OTAPI_Wrap::Ledger_GetCount(ServerGetDefault(), nymID, nymID, paymentInbox);
-		_dbg1("Count: " << count);
 		count --;
 		mMadeEasy.discard_incoming_payments(ServerGetDefault(), nymID, std::to_string(count));		
 		return true;
@@ -1994,15 +2096,12 @@ bool cUseOT::PaymentDiscard(const string & nym, const string & index, bool all, 
 		return true;
 	}
 
-	_dbg2("string paymentInbox = ");
 	string paymentInbox = OTAPI_Wrap::LoadPaymentInbox(ServerGetDefault(), nymID); // Returns NULL, or an inbox.
-	_dbg2("int32_t count =");
 	if (paymentInbox.empty()) {
 		 OTAPI_Wrap::Output(0, "\n\n accept_from_paymentbox:  OT_API_LoadPaymentInbox Failed.\n\n");
 		 return false;
 	}
 	int32_t count = OTAPI_Wrap::Ledger_GetCount(ServerGetDefault(), nymID, nymID, paymentInbox);
-	_dbg2(" PaymentDiscard() count =  " << count);
 	for (int32_t i = 0; i < count; i++) {
 		mMadeEasy.discard_incoming_payments(ServerGetDefault(), nymID, std::to_string(0));
 	}	

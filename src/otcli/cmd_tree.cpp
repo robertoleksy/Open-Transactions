@@ -502,12 +502,15 @@ void cCmdParser::Init() {
 	AddFormat("msg send-to", {pTo}, {pSubj, pMsg}, { {"--cc",pNym} , {"--bcc",pNym} , {"--prio",pInt}, {"--file",pReadFile} },
 		LAMBDA { auto &D=*d; return U.MsgSend(U.NymGetName(U.NymGetDefault()), D.V(1) + D.o("--cc"), D.v(2,"nosubject"), D.v(3), stoi(D.o1("--prio","0")), D.o1("--file",""), D.has("--dryrun")); }	);
 
-	AddFormat("msg rm", {pNym, pOnceInt}, {}, {/*{"--all", pBool}*/ }, // FIXME proper handle option without parameter!
-		LAMBDA { auto &D=*d; return U.MsgInRemoveByIndex(D.V(1), stoi(D.V(2)), D.has("--dryrun"));} );
+	AddFormat("msg rm", {pOnceInt}, {pNym}, {/*{"--all", pBool}*/ }, // FIXME proper handle option without parameter!
+		LAMBDA { auto &D=*d; return U.MsgInRemoveByIndex(D.v(2), stoi(D.V(1)), D.has("--dryrun"));} );
 
-	AddFormat("msg rm-out", {pNym, pOnceInt}, {}, {/*{"--all", , pBool}*/ }, // FIXME proper handle option without parameter!
-		LAMBDA { auto &D=*d; return U.MsgOutRemoveByIndex(D.V(1), stoi(D.V(2)), D.has("--dryrun")); } );
-
+	AddFormat("msg rm-out", {pOnceInt}, {pNym}, {/*{"--all", , pBool}*/ }, // FIXME proper handle option without parameter!
+		LAMBDA { auto &D=*d; return U.MsgOutRemoveByIndex(D.v(2), stoi(D.V(1)), D.has("--dryrun")); } );
+		
+	AddFormat("msg rm-all", {}, {pNym}, {},
+		LAMBDA { auto &D=*d; return U.MsgRemoveAllByIndex(D.v(1, U.NymGetName( U.NymGetDefault() )), D.has("--dryrun")); } );
+		
 	//======== ot nym ========
 
 	AddFormat("nym", {}, {}, {},
@@ -550,6 +553,9 @@ void cCmdParser::Init() {
 
 	AddFormat("payment ls", {}, {pNymMy, pServer}, {},
 		LAMBDA { auto &D=*d; return U.PaymentShow( D.v(1, U.NymGetName( U.NymGetDefault())), D.v(2, U.ServerGetName(U.ServerGetDefault())), D.has("--dryrun") ); } );
+		
+	AddFormat("payment-out ls", {}, {pNymMy, pServer}, {},
+		LAMBDA { auto &D=*d; return U.PaymentShowOut( D.v(1, U.NymGetName( U.NymGetDefault())), D.v(2, U.ServerGetName(U.ServerGetDefault())), D.has("--dryrun") ); } );
 
 	AddFormat("payment accept", {pAccountMy, pPaymetInboxIndex}, {}, {},
 		LAMBDA { auto &D=*d; return U.PaymentAccept( D.V(1), stoi(D.V(2)), D.has("--dryrun") ); } );
